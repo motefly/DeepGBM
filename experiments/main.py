@@ -40,6 +40,7 @@ parser.add_argument('-maxleaf', type = int, default = 128)
 parser.add_argument('-mindata', type = int, default = 40)
 parser.add_argument('-tree_lr', type = float, default = 0.15)
 parser.add_argument('-embsize', type = int, default = 20)
+parser.add_argument('-cate_embsize', type = int, default = 4)
 
 parser.add_argument('-lr', type = float, default = 1e-3)
 parser.add_argument('-opt', type = str, default = 'AdamW')
@@ -54,12 +55,19 @@ parser.add_argument('-feature_emb_size', type = int, default = 50)
 parser.add_argument('-feat_per_group', type = int, default = 128)
 parser.add_argument('-loss_de', type = int, default = 5)
 parser.add_argument('-task', type = str, default = 'regression')
+parser.add_argument('-kd_type', type = str, default = 'emb')
 
 
 args = parser.parse_args()
 assert(args.nslices <= args.ntrees)
 
-plot_title = args.plot_title
+plot_title = args.data + "_" + args.opt + "_s" + str(args.seed) + "_ns" + str(args.nslices) + "_nt" + str(args.ntrees)
+plot_title += "_lf" + str(args.maxleaf) 
+plot_title += "_lr" +str(args.lr) + "_lde" + str(args.loss_de) + "_ldr" + str(args.loss_dr)
+plot_title += "_" + args.model
+plot_title += "_emb" + str(args.embsize) + '_fpg' + str(args.feat_per_group)
+plot_title += '_' + args.plot_title
+plot_title += '_' + args.group_method
 
 args.seeds = [int(x) for x in args.seed.split(',')]
 random.seed(args.seeds[0])
@@ -67,15 +75,26 @@ np.random.seed(args.seeds[0])
 torch.cuda.manual_seed_all(args.seeds[0])
     
 def main():
+    cate_model_list = ['deepfm', 'pnn', 'wideNdeep', 'lr', 'fm']
+    if args.model in cate_model_list:
+        cate_data = dh.load_data(args.data+'_cate')
+        # designed for fast cateNN
+        cate_data = dh.trans_cate_data(cate_data)
+        train_cateModels(args, cate_data, plot_title, key="")
     if "gbdt2nn" in args.model:
         num_data = dh.load_data(args.data+'_num')
-        train_GBDT2NN(args, num_data, plot_title)
+        train_GBDT2NN(args, num_data, plot_title, key="", kd_type=args.kd_type)
     elif args.model == "deepgbm":
         num_data = dh.load_data(args.data+'_num')
         cate_data = dh.load_data(args.data+'_cate')
-        # designed for faster cateNN
+        # designed for fast cateNN
         cate_data = dh.trans_cate_data(cate_data)
-        train_DEEPGBM(args, num_data, cate_data, plot_title)
-    
+        train_DEEPGBM(args, num_data, cate_data, plot_title, key="")
+    elif args.model == 'd1':
+        num_data = dh.load_data(args.data+'_num')
+        cate_data = dh.load_data(args.data+'_cate')
+        # designed for fast cateNN
+        cate_data = dh.trans_cate_data(cate_data)
+        train_D1(args, num_data, cate_data, plot_title, key="")
 if __name__ == '__main__':
     main()

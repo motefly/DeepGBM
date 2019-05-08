@@ -5,7 +5,7 @@ import pdb
 import torch
 import gc
 
-def train_GBDT2NN(args, num_data, plot_title, key="", trained_gbdt_model=None):
+def train_GBDT2NN(args, num_data, plot_title, key, trained_gbdt_model=None, kd_type='emb'):
     tree_layers = [int(x) for x in args.tree_layers.split(',')]
     train_x, train_y, test_x, test_y = num_data
     if trained_gbdt_model:
@@ -78,7 +78,49 @@ def train_GBDT2NN(args, num_data, plot_title, key="", trained_gbdt_model=None):
         print('Final metrics: %s'%str(metric))
     return gbdt2nn_model, opt, metric
 
-def train_DEEPGBM(args, num_data, cate_data, plot_title, key="", trained_gbdt_model=None):
+
+def train_cateModels(args, cate_data, plot_title, key):
+    train, test = cate_data
+    train_x, train_y, feature_sizes = train
+    test_x, test_y, _ = test
+    # feature_size = max(feature_sizes)
+    field_size = train_x.shape[1]
+    cate_layers = [int(x) for x in args.cate_layers.split(',')]
+    for seed in args.seeds:
+        np.random.seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        if args.model == 'deepfm':
+            model = DeepFM(field_size,feature_sizes,deep_layers=cate_layers,
+                            use_cuda=True,use_fm=True,use_deep=True,
+                            embedding_size=args.cate_embsize,task=args.task).cuda()
+        elif args.model == 'wideNdeep':
+            model = DeepFM(field_size,feature_sizes,deep_layers=cate_layers,
+                            use_cuda=True,use_fm=False,use_deep=True,use_wide=True,
+                            embedding_size=args.cate_embsize,task=args.task).cuda()
+        elif args.model == 'lr':
+            model = DeepFM(field_size,feature_sizes,deep_layers=cate_layers,
+                            use_cuda=True,use_fm=False,use_deep=False,use_wide=True,
+                            embedding_size=args.cate_embsize,task=args.task).cuda()
+        elif args.model == 'fm':
+            model = DeepFM(field_size,feature_sizes,deep_layers=cate_layers,
+                            use_cuda=True,use_fm=True,use_deep=False,use_wide=False,
+                            embedding_size=args.cate_embsize,task=args.task).cuda()
+        elif args.model == 'pnn':
+            model = PNN(field_size, feature_sizes,deep_layers=cate_layers,
+                            use_cuda=True, task=args.task,
+                            use_inner_product=True, use_outer_product=True).cuda()
+
+        opt = AdamW(model.parameters(), lr=args.lr, weight_decay=args.l2_reg, amsgrad=False)
+        TrainWithLog(args, plot_title+'seed'+str(seed), train_x, train_y, None,
+                        test_x, test_y, model,
+                        opt, args.max_epoch, args.batch_size, 1, key)
+
+        _,pred_y = EvalTestset(test_x, test_y, model, args.test_batch_size)
+        metric = eval_metrics(args.task, test_y, pred_y)
+        print('Final metrics: %s'%str(metric))
+    return model, opt, metric
+
+def train_DEEPGBM(args, num_data, cate_data, plot_title, key, trained_gbdt_model=None):
     tree_layers = [int(x) for x in args.tree_layers.split(',')]
     cate_layers = [int(x) for x in args.cate_layers.split(',')]
     train_x, train_y, test_x, test_y = num_data
@@ -158,3 +200,34 @@ def train_DEEPGBM(args, num_data, cate_data, plot_title, key="", trained_gbdt_mo
         metric = eval_metrics(args.task, test_y, pred_y)
         print('Final metrics: %s'%str(metric))
     return deepgbm_model, opt, metric
+
+def train_D1(args, num_data, cate_data, plot_title, key="", trained_gbdt_model=None):
+    train_x, train_y, test_x, test_y = num_data
+    cate_layers = [int(x) for x in args.cate_layers.split(',')]
+    if trained_gbdt_model:
+        gbm, trn_pred = trained_gbdt_model
+    else:
+        gbm, trn_pred = TrainGBDT(train_x, train_y, test_x, test_y, args.tree_lr, args.ntrees, args.maxleaf, args.mindata, args.task)
+    tst_pred = gbm.predict(test_x, raw_score=True)
+    del train_x, test_x
+    gc.collect()
+    train, test = cate_data
+    train_xc, _, feature_sizes = train
+    test_xc, _, _ = test
+    field_size = train_xc.shape[1]
+    for seed in args.seeds:
+        np.random.seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        deepgbm_model = DeepGBM(task=args.task,
+                                cate_field_size=field_size, feature_sizes=feature_sizes,
+                                embedding_size=args.embsize, num_model='gbdt',
+                                maxleaf=args.maxleaf,deep_layers=cate_layers).to(device)
+        opt = AdamW(deepgbm_model.parameters(), lr=args.lr, weight_decay=args.l2_reg, amsgrad=False, model_decay_opt=deepgbm_model, weight_decay_opt=args.l2_reg_opt, key_opt='deepfm')
+        TrainWithLog(args, plot_title+'seed'+str(seed), trn_pred, train_y, None,
+                     tst_pred, test_y, deepgbm_model, opt,
+                     args.max_epoch, args.batch_size, 1, key,
+                     train_x_opt=train_xc, test_x_opt=test_xc)
+    _,pred_y = EvalTestset(tst_pred, test_y, deepgbm_model, args.test_batch_size, test_x_opt=test_xc)
+    metric = eval_metrics(args.task, test_y, pred_y)
+    print('Final metrics: %s'%str(metric))
+    return deepgbm_model, opt, metric, gbm
