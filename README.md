@@ -10,12 +10,12 @@ Guolin Ke, Zhenhui Xu, Jia Zhang, Jiang Bian, and Tie-yan Liu. "DeepGBM: A Deep 
 ## Brief Introduction
 This repo is built for the experimental codes in our paper, 
 containing all the data preprocessing, baseline models implementation
-and proposed model implementation ([full codes here](https://github.com/motefly/deepgbm-release/tree/master/experiments)). For quick start, here we only show the codes related to our model.
+and proposed model implementation ([full codes here](https://github.com/motefly/DeepGBM/tree/master/experiments)). For quick start, here we only show the codes related to our model.
 For GBDT based model, our implementation is based on LightGBM. 
 For NN based model, our implementation is based on pytorch.
 
 There are three main folders in the project, `data` is for data storage, `preprocess` is the folder containing feature selection and encoding, `models` contains all the implementation codes of the proposed model.
-For more detailed experiments codes, refer to the [`experiments` folder](https://github.com/motefly/deepgbm-release/tree/master/experiments). 
+For more detailed experiments codes, refer to the [`experiments` folder](https://github.com/motefly/DeepGBM/tree/master/experiments). 
 
 Besides, `main.py` is the entry code file for our model.
 Besides, `data_helpers.py` contains the data loader, `helper.py`
