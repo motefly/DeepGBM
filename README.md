@@ -1,9 +1,9 @@
 # DeepGBM
 
 Implementation for the paper "DeepGBM: A Deep Learning Framework Distilled  by GBDT for Online Prediction Tasks", 
-which has been accepted by KDD'2019 as an Oral Paper, in the Research Track. You can get more information from the [video](https://www.youtube.com/watch?v=UzXNzW2s8Pw) and the [paper](https://dl.acm.org/citation.cfm?id=3330858).
+which has been accepted by KDD'2019 as an Oral Paper, in the Research Track. You can get more information from the [video](https://www.youtube.com/watch?v=UzXNzW2s8Pw) and the [paper](https://www.kdd.org/kdd2019/accepted-papers/view/deepgbm-a-deep-learning-framework-distilled-by-gbdt-for-online-prediction-t).
 
-If you find this code useful in your research, please cite the [paper](https://dl.acm.org/citation.cfm?id=3330858):
+If you find this code useful in your research, please cite the [paper](https://www.kdd.org/kdd2019/accepted-papers/view/deepgbm-a-deep-learning-framework-distilled-by-gbdt-for-online-prediction-t):
 
 Guolin Ke, Zhenhui Xu, Jia Zhang, Jiang Bian, and Tie-Yan Liu. "DeepGBM: A Deep Learning Framework Distilled by GBDT for Online Prediction Tasks." In Proceedings of the 25th ACM SIGKDD International Conference on Knowledge Discovery & Data Mining. ACM, 2019: 384-394.
 
