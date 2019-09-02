@@ -1,3 +1,5 @@
 LightGBM==2.2.1
-Pytorch==0.4.1
-Sklearn==0.19.2
+torch==0.4.1
+scikit-learn==0.19.2
+category-encoders
+tqdm
