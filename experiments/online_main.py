@@ -286,11 +286,11 @@ def deepgbm_online():
     num_data = (trn_x, trn_y, vld_x, vld_y)
     fitted_model, opt, metric = train_DEEPGBM(args, num_data, cate_data, plot_title, key="")
     metrics = [metric]
-    for t in range(1, 5):
-        trn_x = np.load(root+"%d_train_features.npy"%(t))
-        trn_y = np.load(root+"%d_train_labels.npy"%(t))
-        vld_x = np.load(root+"%d_test_features.npy"%(t+1))
-        vld_y = np.load(root+"%d_test_labels.npy"%(t+1))
+    for t in range(1, 4): #online0 for pre-train, so start with online1(later batches). range(1,5) -> range(1,4)
+        trn_x = np.load(root+"%d_train_features.npy"%(t)) #(features) data in i-th batch update the model
+        trn_y = np.load(root+"%d_train_labels.npy"%(t)) #(labels/grant truth)
+        vld_x = np.load(root+"%d_test_features.npy"%(t+1)) #(features) data in (i+1)-th batch evaluate the model from i-th batch
+        vld_y = np.load(root+"%d_test_labels.npy"%(t+1)) #(labels/grant truth) in order to compare the difference between the prediction and grant truth
         train_cate = dh.read_cate_data(root.replace('_num', '_cate')+'%d/'%t)
         test_cate = dh.read_cate_data(root.replace('_num', '_cate')+'%d/'%(t+1))
         train_cate, test_cate= dh.trans_cate_data((train_cate, test_cate), feature_sizes)
