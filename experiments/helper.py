@@ -83,7 +83,7 @@ def EvalTestset(test_x, test_y, model, test_batch_size, test_x_opt=None):
             targets = torch.from_numpy(test_y[tst_st:tst_ed]).to(device)
             if isinstance(outputs, tuple):
                 outputs = outputs[0]
-            y_preds.append(outputs)
+            y_preds.append(outputs.cpu()) #y_preds.append(outputs) -> y_preds.append(outputs.cpu())
             loss_tst = model.true_loss(outputs, targets).item()
             sum_loss += (tst_ed - tst_st) * loss_tst
     return sum_loss / test_len, np.concatenate(y_preds, 0)
